@@ -39,6 +39,7 @@ class ProductAcceptanceTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        // FK 역순 삭제
         productRepository.deleteAll();
         categoryRepository.deleteAll();
     }
