@@ -259,9 +259,3 @@
   - 프로덕션 버그 주석은 요청→응답 인과 체인 전체를 기술할 것 (한쪽만 언급하면 혼란)
   - `notNullValue()` 대신 `equalTo(구체값)` 사용 — 사용자 피드백: "무책임한 검증"
   - 같은 @RequestBody 누락이라도 엔티티별 실패 양상이 다름 → 각각 현재 동작 테스트 필요
-
-- 다음 세션 TODO:
-  - [ ] 테스트 픽스처/헬퍼 공통화 리팩토링 (데이터 생성 중복 제거)
-  - [ ] setUp 전체 삭제 로직을 공통 베이스 클래스로 추출
-  - [ ] @RequestBody 누락 프로덕션 버그 수정 (CategoryRestController, ProductRestController)
-  - [ ] 프로덕션 수정 후 @Disabled 테스트 활성화
