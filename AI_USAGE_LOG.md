@@ -129,8 +129,8 @@
 ## SessionID: bbf7d576-831f-4b3a-b249-07e635319651
 
 ### 세션 정보
-- 목적: Category/Product API E2E 인수 테스트 작성, 프로덕션 버그 문서화, logical-commit 스킬 생성
-- 범위: CategoryAcceptanceTest.java, ProductAcceptanceTest.java, acceptance-test-writer 스킬, logical-commit 스킬
+- 목적: Category/Product/Gift API E2E 인수 테스트 작성, 프로덕션 버그 문서화, logical-commit 스킬 생성
+- 범위: CategoryAcceptanceTest.java, ProductAcceptanceTest.java, GiftAcceptanceTest.java, acceptance-test-writer 스킬, logical-commit 스킬
 - 근거 소스: 대화 로그, 테스트 실행 결과(`./gradlew test`), git 커밋 이력
 
 ### 프롬프트 및 결과
@@ -145,6 +145,8 @@
 | C6 | GET /api/products 테스트 작성 | `/acceptance-test-writer GET /api/products` | Product 목록 조회 테스트 | ProductAcceptanceTest.java 생성. 빈 목록(200+[]) + N개 존재(200+구체값 검증) 2개 테스트 통과 | 채택 | 검증력: Repository로 데이터 준비 후 GET 검증. 재현성: FK 역순 삭제로 테스트 격리 | 테스트 실행 결과, git 99b04c8 |
 | C7 | notNullValue → 구체값 검증 개선 | 사용자: `not null value는 무책임해. 구체적으로 검증하고 [1]도 검증해야대` | 구체적 값 검증 + [1] 추가 | notNullValue() → equalTo("노트북"), equalTo(1_500_000) 등으로 변경. [1] 키보드 검증 추가 | 채택 | 검증력: 구체값 검증이 notNullValue보다 회귀 방지 효과 높음. 비용: 변경 최소 | ProductAcceptanceTest.java |
 | C8 | POST /api/products 테스트 작성 | `/acceptance-test-writer POST /api/products` | POST 성공/실패 테스트 | 3개 테스트 추가: 현재 동작(500) 1개 활성 + @Disabled 2개(성공, 존재하지 않는 카테고리). Category와 달리 categoryId=null → findById(null) → 500 | 채택 | 검증력: Category 버그와 다른 실패 경로(500 vs 200+null) 문서화. 유지보수성: @Disabled로 기대 동작 보존 | 테스트 실행 결과 |
+| C9 | POST /api/gifts 테스트 작성 | `/acceptance-test-writer POST /api/gifts` | Gift 전송 성공/실패 테스트 | 5개 테스트 작성(모두 활성): 성공(200+재고 감소), 헤더 누락(400), 옵션 미존재(500), 재고 부족(500+롤백), 발신자 미존재(500+롤백) | 채택 | 검증력: Layer 3(DB 상태 변화) 검증 포함. 트랜잭션 롤백까지 확인 | 테스트 실행 결과, git 8300e41 |
+| C10 | 테스트 간 FK 충돌 해결 | GiftAcceptanceTest 추가 후 ProductAcceptanceTest 실패 → setUp 분석 | 모든 테스트 통과 | Category/Product 테스트의 setUp에 optionRepository.deleteAll() 추가. 테스트 클래스 간 DB 공유로 인한 FK 제약 충돌 해결 | 채택 | 재현성: 모든 테스트 클래스에서 전체 FK 역순 삭제로 격리 보장. 비용: import + 3행 추가 | git d679878, ./gradlew test 전체 통과 |
 
 ### 접근법 요약
 
@@ -155,6 +157,8 @@
 | 의존 순서 기반 커밋 분리 | C4: 논리적 커밋 | 성공 | 유지 | 인프라→코드→설정 순서로 커밋하면 bisect/revert 시 유리 |
 | Repository로 테스트 데이터 준비 | C6, C8: Product 테스트 | 성공 | 유지 | POST API에 @RequestBody 버그 있어 API 호출 불가 → Repository 직접 사용 |
 | 구체값 검증 (equalTo > notNullValue) | C7: 검증 개선 | 성공 | 유지 | notNullValue는 회귀 방지에 무의미. 실제 기대값으로 검증해야 함 |
+| 전체 FK 역순 삭제로 테스트 격리 | C10: setUp 보강 | 성공 | 유지 | 테스트 클래스 간 DB 공유 시, 자기가 안 쓰는 테이블도 FK 역순으로 삭제해야 함 |
+| Layer 3 DB 상태 검증 (assertThat) | C9: Gift 테스트 | 성공 | 유지 | 상태 변경 API는 HTTP 응답만으로 부족. DB에서 재고 변화/롤백을 직접 확인 |
 
 ### 생성/수정된 산출물
 
@@ -164,6 +168,7 @@
 | .claude/skills/acceptance-test-writer/SKILL.md | 프로덕션 수정 금지 규칙, 테스트 실패 대응 절차, 파일 수정 범위 제약 추가 | 완료 |
 | .claude/skills/logical-commit/SKILL.md | 신규 생성. 변경 사항 분석→그룹핑→커밋 자동화 스킬 | 완료 |
 | src/test/java/gift/ProductAcceptanceTest.java | 신규 생성. GET 2개(빈 목록, N개 구체값 검증) + POST 3개(현재 동작 500, @Disabled 성공, @Disabled 카테고리 미존재) | 완료 |
+| src/test/java/gift/GiftAcceptanceTest.java | 신규 생성. 성공(200+재고 감소) + 실패 4개(헤더 누락 400, 옵션 미존재 500, 재고 부족 500, 발신자 미존재 500) | 완료 |
 
 ### 발견 사항
 
@@ -175,6 +180,9 @@
 | 주석 작성 원칙 | 응답 검증 주석은 "왜 이 값인가"의 전체 인과 체인(요청→처리→저장→응답)을 포함해야 함 |
 | @RequestBody 누락의 엔티티별 차이 | Category: name=null로 저장 → 200 반환. Product: categoryId=null → findById(null) → IllegalArgumentException → 500 반환. 같은 버그라도 엔티티 구조에 따라 실패 양상이 다름 |
 | notNullValue 검증은 불충분 | 값이 null이 아닌 것만 확인하면 잘못된 값이 들어와도 통과함 → 구체적인 equalTo 사용 필수 |
+| 테스트 클래스 간 DB 공유 문제 | 같은 Spring Context를 공유하면 다른 테스트 클래스의 데이터가 남아 FK 제약 충돌 발생. 모든 테스트 클래스에서 전체 테이블 FK 역순 삭제 필요 |
+| GiftRestController는 @RequestBody 정상 | Category/Product와 달리 Gift API는 @RequestBody 있음. 프로덕션 버그 없이 정상 동작하여 5개 테스트 모두 활성 상태 |
+| @Transactional 롤백 검증 | 재고 부족/발신자 미존재 시 예외 발생 → @Transactional에 의해 option.decrease()도 롤백됨. DB에서 재고 미변경 확인으로 검증 |
 
 ### 최종 가이드
 
@@ -188,6 +196,7 @@
   - 같은 @RequestBody 누락이라도 엔티티별 실패 양상이 다름 → 각각 현재 동작 테스트 필요
 
 - 다음 세션 TODO:
-  - [ ] Gift API E2E 테스트 작성 (`/acceptance-test-writer POST /api/gifts`)
-  - [ ] 테스트 픽스처/헬퍼 공통화 리팩토링
+  - [ ] 테스트 픽스처/헬퍼 공통화 리팩토링 (데이터 생성 중복 제거)
+  - [ ] setUp 전체 삭제 로직을 공통 베이스 클래스로 추출
   - [ ] @RequestBody 누락 프로덕션 버그 수정 (CategoryRestController, ProductRestController)
+  - [ ] 프로덕션 수정 후 @Disabled 테스트 활성화
