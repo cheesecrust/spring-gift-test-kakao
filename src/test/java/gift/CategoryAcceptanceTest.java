@@ -1,6 +1,5 @@
 package gift;
 
-import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.OptionRepository;
 import gift.model.ProductRepository;
@@ -58,8 +57,8 @@ class CategoryAcceptanceTest {
     @Test
     void 카테고리_목록_조회_N개_존재() {
         // given
-        categoryRepository.save(new Category("전자기기"));
-        categoryRepository.save(new Category("식품"));
+        createCategory("전자기기");
+        createCategory("식품");
 
         // when & then
         given()
@@ -68,10 +67,8 @@ class CategoryAcceptanceTest {
         .then()
             .statusCode(200)
             .body("size()", equalTo(2))
-            .body("[0].id", notNullValue())
-            .body("[0].name", notNullValue())
-            .body("[1].id", notNullValue())
-            .body("[1].name", notNullValue());
+            .body("name", containsInAnyOrder("전자기기", "식품"))
+            .body("id", everyItem(notNullValue()));
     }
 
     @Test
@@ -91,6 +88,16 @@ class CategoryAcceptanceTest {
             .statusCode(200)
             .body("id", notNullValue())
             .body("name", equalTo("전자기기"));
+    }
+
+    private void createCategory(String name) {
+        given()
+            .contentType(ContentType.JSON)
+            .body(Map.of("name", name))
+        .when()
+            .post("/api/categories")
+        .then()
+            .statusCode(200);
     }
 
     @Test

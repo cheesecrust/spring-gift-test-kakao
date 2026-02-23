@@ -1,14 +1,11 @@
 package gift;
 
-import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.OptionRepository;
-import gift.model.Product;
 import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -17,7 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -60,9 +56,9 @@ class ProductAcceptanceTest {
     @Test
     void 상품_목록_조회_N개_존재() {
         // given
-        var category = categoryRepository.save(new Category("전자기기"));
-        productRepository.save(new Product("노트북", 1_500_000, "https://example.com/notebook.png", category));
-        productRepository.save(new Product("키보드", 120_000, "https://example.com/keyboard.png", category));
+        var categoryId = createCategory("전자기기");
+        createProduct("노트북", 1_500_000, "https://example.com/notebook.png", categoryId);
+        createProduct("키보드", 120_000, "https://example.com/keyboard.png", categoryId);
 
         // when & then
         given()
@@ -71,25 +67,21 @@ class ProductAcceptanceTest {
         .then()
             .statusCode(200)
             .body("size()", equalTo(2))
-            .body("[0].name", equalTo("노트북"))
-            .body("[0].price", equalTo(1_500_000))
-            .body("[0].imageUrl", equalTo("https://example.com/notebook.png"))
-            .body("[0].category.name", equalTo("전자기기"))
-            .body("[1].name", equalTo("키보드"))
-            .body("[1].price", equalTo(120_000))
-            .body("[1].imageUrl", equalTo("https://example.com/keyboard.png"))
-            .body("[1].category.name", equalTo("전자기기"));
+            .body("name", containsInAnyOrder("노트북", "키보드"))
+            .body("price", containsInAnyOrder(1_500_000, 120_000))
+            .body("imageUrl", containsInAnyOrder("https://example.com/notebook.png", "https://example.com/keyboard.png"))
+            .body("category.name", everyItem(equalTo("전자기기")));
     }
 
     @Test
     void 상품_생성_성공() {
         // given
-        var category = categoryRepository.save(new Category("전자기기"));
+        var categoryId = createCategory("전자기기");
         var request = Map.of(
             "name", "노트북",
             "price", 1_500_000,
             "imageUrl", "https://example.com/notebook.png",
-            "categoryId", category.getId()
+            "categoryId", categoryId
         );
 
         // when
@@ -129,5 +121,33 @@ class ProductAcceptanceTest {
         // then — 기대 동작: 존재하지 않는 categoryId → NoSuchElementException → 500
         response.then()
             .statusCode(500);
+    }
+
+    private Long createCategory(String name) {
+        return given()
+            .contentType(ContentType.JSON)
+            .body(Map.of("name", name))
+        .when()
+            .post("/api/categories")
+        .then()
+            .statusCode(200)
+            .extract()
+            .jsonPath()
+            .getLong("id");
+    }
+
+    private void createProduct(String name, int price, String imageUrl, Long categoryId) {
+        given()
+            .contentType(ContentType.JSON)
+            .body(Map.of(
+                "name", name,
+                "price", price,
+                "imageUrl", imageUrl,
+                "categoryId", categoryId
+            ))
+        .when()
+            .post("/api/products")
+        .then()
+            .statusCode(200);
     }
 }

@@ -1,12 +1,10 @@
 package gift;
 
-import gift.model.Category;
 import gift.model.CategoryRepository;
 import gift.model.Member;
 import gift.model.MemberRepository;
 import gift.model.Option;
 import gift.model.OptionRepository;
-import gift.model.Product;
 import gift.model.ProductRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -55,8 +53,8 @@ class GiftAcceptanceTest {
         // given
         var sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
         var receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
-        var category = categoryRepository.save(new Category("전자기기"));
-        var product = productRepository.save(new Product("노트북", 1_500_000, "https://example.com/notebook.png", category));
+        var productId = createProductWithCategory("전자기기", "노트북", 1_500_000, "https://example.com/notebook.png");
+        var product = productRepository.findById(productId).orElseThrow();
         var option = optionRepository.save(new Option("기본 옵션", 10, product));
 
         var request = Map.of(
@@ -134,8 +132,8 @@ class GiftAcceptanceTest {
         // given
         var sender = memberRepository.save(new Member("보내는사람", "sender@test.com"));
         var receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
-        var category = categoryRepository.save(new Category("전자기기"));
-        var product = productRepository.save(new Product("노트북", 1_500_000, "https://example.com/notebook.png", category));
+        var productId = createProductWithCategory("전자기기", "노트북", 1_500_000, "https://example.com/notebook.png");
+        var product = productRepository.findById(productId).orElseThrow();
         var option = optionRepository.save(new Option("기본 옵션", 2, product));
 
         var request = Map.of(
@@ -166,8 +164,8 @@ class GiftAcceptanceTest {
     void 선물_전송_실패_발신자_미존재() {
         // given
         var receiver = memberRepository.save(new Member("받는사람", "receiver@test.com"));
-        var category = categoryRepository.save(new Category("전자기기"));
-        var product = productRepository.save(new Product("노트북", 1_500_000, "https://example.com/notebook.png", category));
+        var productId = createProductWithCategory("전자기기", "노트북", 1_500_000, "https://example.com/notebook.png");
+        var product = productRepository.findById(productId).orElseThrow();
         var option = optionRepository.save(new Option("기본 옵션", 10, product));
 
         var request = Map.of(
@@ -192,5 +190,37 @@ class GiftAcceptanceTest {
         // 재고가 변경되지 않았는지 확인 (트랜잭션 롤백)
         var unchangedOption = optionRepository.findById(option.getId()).orElseThrow();
         assertThat(unchangedOption.getQuantity()).isEqualTo(10);
+    }
+
+    private Long createCategory(String name) {
+        return given()
+            .contentType(ContentType.JSON)
+            .body(Map.of("name", name))
+        .when()
+            .post("/api/categories")
+        .then()
+            .statusCode(200)
+            .extract()
+            .jsonPath()
+            .getLong("id");
+    }
+
+    private Long createProductWithCategory(String categoryName, String productName, int price, String imageUrl) {
+        var categoryId = createCategory(categoryName);
+        return given()
+            .contentType(ContentType.JSON)
+            .body(Map.of(
+                "name", productName,
+                "price", price,
+                "imageUrl", imageUrl,
+                "categoryId", categoryId
+            ))
+        .when()
+            .post("/api/products")
+        .then()
+            .statusCode(200)
+            .extract()
+            .jsonPath()
+            .getLong("id");
     }
 }
