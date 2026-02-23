@@ -31,6 +31,9 @@ class ProductAcceptanceTest {
     int port;
 
     @Autowired
+    OptionRepository optionRepository;
+
+    @Autowired
     ProductRepository productRepository;
 
     @Autowired
@@ -39,7 +42,8 @@ class ProductAcceptanceTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-        // FK 역순 삭제
+        // FK 역순 삭제 — 다른 테스트 클래스가 생성한 데이터도 정리
+        optionRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
     }
