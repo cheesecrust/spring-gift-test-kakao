@@ -23,13 +23,12 @@ public class CommonSteps {
     @Before
     public void setUp() {
         RestAssured.port = port;
-        // 매 시나리오 전 자동 cleanup — FK 역순 삭제
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
-        jdbcTemplate.execute("TRUNCATE TABLE option");
-        jdbcTemplate.execute("TRUNCATE TABLE product");
-        jdbcTemplate.execute("TRUNCATE TABLE category");
-        jdbcTemplate.execute("TRUNCATE TABLE member");
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
+        // 매 시나리오 전 자동 cleanup — FK 역순(자식→부모) DELETE
+        jdbcTemplate.execute("DELETE FROM wish");
+        jdbcTemplate.execute("DELETE FROM options");
+        jdbcTemplate.execute("DELETE FROM product");
+        jdbcTemplate.execute("DELETE FROM category");
+        jdbcTemplate.execute("DELETE FROM member");
     }
 
     @Then("응답 상태 코드는 {int}이다")
