@@ -28,8 +28,20 @@ dependencies {
 	testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.14.0'
 	testImplementation 'io.cucumber:cucumber-spring:7.14.0'
 	testImplementation 'org.junit.platform:junit-platform-suite'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:postgresql'
+	testRuntimeOnly 'org.postgresql:postgresql'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude 'gift/CucumberTest.class'
+}
+
+tasks.register('cucumberTest', Test) {
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform()
+	include 'gift/CucumberTest.class'
+	systemProperty 'spring.profiles.active', 'cucumber'
 }
