@@ -30,18 +30,39 @@ dependencies {
 	testImplementation 'org.junit.platform:junit-platform-suite'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.testcontainers:postgresql'
-	testRuntimeOnly 'org.postgresql:postgresql'
+	runtimeOnly 'org.postgresql:postgresql'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
-	exclude 'gift/CucumberTest.class'
+	exclude 'giftdocker/**'
 }
 
 tasks.register('cucumberTest', Test) {
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
 	useJUnitPlatform()
-	include 'gift/CucumberTest.class'
+	include 'giftdocker/CucumberDockerTest.class'
 	systemProperty 'spring.profiles.active', 'cucumber'
+}
+
+tasks.register('cucumberTestAlone', Test) {
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform()
+	include 'gift/CucumberTest.class'
+	systemProperty 'spring.profiles.active', 'cucumber-alone'
+}
+
+tasks.register('dockerBuild', Exec) {
+	dependsOn bootJar
+	commandLine '/usr/local/bin/docker', 'build', '-t', 'gift-app:latest', '.'
+}
+
+tasks.register('dockerUp', Exec) {
+	commandLine '/usr/local/bin/docker', 'compose', 'up', '-d', '--wait'
+}
+
+tasks.register('dockerDown', Exec) {
+	commandLine '/usr/local/bin/docker', 'compose', 'down'
 }
