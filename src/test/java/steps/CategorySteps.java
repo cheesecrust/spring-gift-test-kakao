@@ -1,4 +1,4 @@
-package gift.steps;
+package steps;
 
 import gift.model.CategoryRepository;
 import io.cucumber.java.en.Given;

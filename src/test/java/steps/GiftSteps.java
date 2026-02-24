@@ -1,4 +1,4 @@
-package gift.steps;
+package steps;
 
 import gift.model.Member;
 import gift.model.MemberRepository;
